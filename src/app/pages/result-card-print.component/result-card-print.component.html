@@ -1,0 +1,81 @@
+<div class="container mt-3 no-print">
+  <button class="btn btn-primary" (click)="goBack()">Back to Entry</button>
+  <button class="btn btn-success ms-2" (click)="printPage()" [disabled]="loading || results.length === 0">Print</button>
+  <hr>
+</div>
+
+<div *ngIf="loading" class="text-center mt-5">
+  <div class="spinner-border" role="status"></div>
+  <p>Loading result cards...</p>
+</div>
+
+<div *ngIf="error" class="alert alert-danger text-center mt-5">
+  <p>{{ error }}</p>
+  <button class="btn btn-primary" (click)="retry()">Retry</button>
+  <button class="btn btn-secondary ms-2" (click)="goBack()">Go Back</button>
+</div>
+
+<!-- Cards container -->
+<div id="print-cards" *ngIf="!loading && results.length > 0">
+  <div *ngFor="let res of results; let i = index" class="result-card-container">
+    <div class="result-card">
+      <!-- School Header -->
+      <div class="text-center mb-4">
+        <h2>School Name</h2>
+        <h4>{{ res.exam?.name || 'N/A' }} - {{ res.exam?.academicYear || 'N/A' }}</h4>
+        <h5>Group: {{ res.exam?.group }}</h5>
+      </div>
+
+      <!-- Student Info Row -->
+      <div class="row">
+        <div class="col-8">
+          <p><strong>Name:</strong> {{ res.student?.firstName || '' }} {{ res.student?.lastName || '' }}</p>
+          <p><strong>Father's Name:</strong> {{ res.student?.fatherName || '' }}</p>
+          <p><strong>Admission No:</strong> {{ res.student?.admissionNo || '' }}</p>
+          <p><strong>Class:</strong> {{ res.student?.class?.className || '' }} - Section {{ res.student?.section || '' }}</p>
+          <p><strong>Date of Birth:</strong> {{ (res.student?.dateOfBirth | date:'dd/MM/yyyy') || '' }}</p>
+        </div>
+        <div class="col-4 text-center">
+          <img [src]="getPhotoUrl(res.student?.photo)" alt="Student Photo" class="img-fluid rounded" style="max-height: 120px;">
+        </div>
+      </div>
+
+      <!-- Marks Table -->
+      <table class="table table-bordered mt-3">
+        <thead class="table-dark">
+          <tr>
+            <th>Subject</th>
+            <th>Marks Obtained</th>
+            <th>Maximum Marks</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let subject of res.exam?.subjects || []">
+            <td>{{ subject.name }}</td>
+            <td>{{ res.marks?.[subject] || 0 }}</td>
+            <td>{{ res.exam?.maxMarks || 100 }}</td>
+          </tr>
+          <tr class="table-info">
+            <td colspan="1"><strong>Total</strong></td>
+            <td><strong>{{ res.total || 0 }}</strong></td>
+            <td><strong>{{ (res.exam?.subjects?.length || 0) * (res.exam?.maxMarks || 100) }}</strong></td>
+          </tr>
+          <tr>
+            <td colspan="3">
+              <strong>Percentage:</strong> {{ (res.percentage?.toFixed(2)) || '0' }}% &nbsp; | &nbsp;
+              <strong>Grade:</strong> {{ res.grade || 'N/A' }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Signatures -->
+      <div class="row mt-4">
+        <div class="col-4 text-center">_________________<br>Class Teacher</div>
+        <div class="col-4 text-center">_________________<br>Principal</div>
+        <div class="col-4 text-center">_________________<br>Parent's Signature</div>
+      </div>
+    </div>
+    <div *ngIf="i < results.length - 1" class="page-break"></div>
+  </div>
+</div>

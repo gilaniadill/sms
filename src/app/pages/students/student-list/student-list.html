@@ -1,0 +1,269 @@
+<div class="container-fluid mt-4">
+  <div class="card shadow-sm border-0">
+    <!-- Card Header -->
+    <div
+      class="card-header bg-white py-3 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 border-bottom border-2"
+      style="border-bottom-color: #1e2b3a !important;">
+      <h5 class="mb-2 mb-md-0 fw-semibold" style="color: #1e2b3a;">
+        <i class="bi bi-people-fill me-2"></i>Student List
+      </h5>
+      <a class="btn btn-success" routerLink="/students/add">
+        <i class="bi bi-person-plus me-1"></i> Add New Student
+      </a>
+    </div>
+
+    <!-- Card Body -->
+    <div class="card-body">
+      <!-- Filters -->
+      <div class="row g-2 mb-4">
+        <div class="col-12 col-md-4">
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0">
+              <i class="bi bi-search"></i>
+            </span>
+            <input type="text" class="form-control border-start-0 ps-0"
+              placeholder="Search by name, father, admission..." [(ngModel)]="searchText" (input)="applyFilters()" />
+          </div>
+        </div>
+
+        <!-- Class filter dropdown -->
+        <div class="col-6 col-md-3">
+          <select class="form-select" [(ngModel)]="selectedClass" (change)="applyFilters()">
+            <option value="">All Classes</option>
+            <option *ngFor="let c of classes" [value]="c._id">
+              {{ c.className || c.name }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Section filter dropdown -->
+        <div class="col-6 col-md-3">
+          <select class="form-select" [(ngModel)]="selectedSection" (change)="applyFilters()">
+            <option value="">All Sections</option>
+            <option *ngFor="let s of sections" [value]="s">
+              Section {{ s }}
+            </option>
+          </select>
+        </div>
+
+        <div class="col-12 col-md-2">
+          <button class="btn btn-outline-secondary w-100" (click)="resetFilters()">
+            <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+          </button>
+        </div>
+      </div>
+
+      <!-- Actions Bar -->
+      <div
+        class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-2">
+        <span class="badge bg-info bg-opacity-10 text-info border border-info rounded-pill px-3 py-2">
+          <i class="bi bi-person-standing me-1"></i> {{ students.length }} student(s) found
+        </span>
+        <div class="d-flex gap-2 flex-wrap">
+          <button class="btn btn-outline-primary btn-sm" (click)="printSelectedStudents()"
+            [disabled]="selectedStudentIds.length === 0">
+            <i class="bi bi-printer me-1"></i> Print Selected
+          </button>
+          <button class="btn btn-outline-danger btn-sm" (click)="deleteSelectedStudents()"
+            [disabled]="selectedStudentIds.length === 0 || isLoading">
+            <i class="bi bi-trash3 me-1"></i> Delete Selected
+          </button>
+        </div>
+      </div>
+
+      <!-- ========== SKELETON LOADER ========== -->
+      <div *ngIf="isLoading" class="table-responsive rounded border">
+        <table class="table align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="text-center" style="width: 40px;"></th>
+              <th class="text-center">#</th>
+              <th>Admission No</th>
+              <th>Name</th>
+              <th>Father's Name</th>
+              <th>Class</th>
+              <th>Section</th>
+              <th>CNIC</th>
+              <th>D.O.B</th>
+              <th>Phone</th>
+              <th>Status</th>
+              <th class="text-center">Photo</th>
+              <th class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let _ of [].constructor(5); let i = index">
+              <td class="text-center">
+                <div class="skeleton-box" style="width: 18px; height: 18px; margin: auto;"></div>
+              </td>
+              <td class="text-center">
+                <div class="skeleton-box" style="width: 30px; height: 20px; margin: auto;"></div>
+              </td>
+              <td>
+                <div class="skeleton-box" style="width: 80px;"></div>
+              </td>
+              <td>
+                <div class="skeleton-box" style="width: 120px;"></div>
+              </td>
+              <td>
+                <div class="skeleton-box" style="width: 120px;"></div>
+              </td>
+              <td>
+                <div class="skeleton-box" style="width: 40px;"></div>
+              </td>
+              <td>
+                <div class="skeleton-box" style="width: 30px;"></div>
+              </td>
+              <td>
+                <div class="skeleton-box" style="width: 100px;"></div>
+              </td>
+              <td>
+                <div class="skeleton-box" style="width: 90px;"></div>
+              </td>
+              <td>
+                <div class="skeleton-box" style="width: 100px;"></div>
+              </td>
+              <td>
+                <div class="skeleton-box" style="width: 60px;"></div>
+              </td>
+              <td class="text-center">
+                <div class="skeleton-box rounded-circle" style="width: 40px; height: 40px; margin: auto;"></div>
+              </td>
+              <td class="text-center">
+                <div class="skeleton-box" style="width: 50px; height: 30px; margin: auto;"></div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ========== REAL TABLE ========== -->
+      <div *ngIf="!isLoading && visibleStudents.length" class="table-responsive rounded border">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light" style="background-color: #f8f9fa;">
+            <tr>
+              <th class="text-center" style="width: 40px;">
+                <input type="checkbox" [(ngModel)]="selectAllChecked"
+                  (change)="toggleSelectAll($event.target.checked)" />
+              </th>
+              <th class="text-center">#</th>
+              <th>Admission No</th>
+              <th>Name</th>
+              <th>Father's Name</th>
+              <th>Class</th>
+              <th>Section</th>
+              <th>CNIC</th>
+              <th>D.O.B</th>
+              <th>Phone</th>
+              <th>Status</th>
+              <th class="text-center">Photo</th>
+              <th class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let s of visibleStudents; let i = index; trackBy: trackById">
+              <td class="text-center">
+                <input type="checkbox" [checked]="selectedStudentIds.includes(s._id)"
+                  (change)="toggleSelection(s._id, $event.target.checked)" />
+              </td>
+              <td class="text-center text-muted">{{ i + 1 + (currentPage * pageSize) }}</td>
+              <td><span class="badge bg-secondary bg-opacity-10 text-secondary">{{ s.admissionNo }}</span></td>
+              <td class="fw-semibold">{{ s.firstName }} {{ s.lastName }}</td>
+              <td>{{ s.fatherName }}</td>
+              <!-- Class name display with fallback -->
+              <td>
+                <span class="badge bg-info bg-opacity-10 text-info">
+                  {{ s.class.className }}
+                </span>
+              </td>
+              <td>{{ s.section }}</td>
+              <td>{{ s.cnic }}</td>
+              <td>{{ s.dateOfBirth | date:'yyyy-MM-dd':'UTC' }}</td>
+              <td>{{ s.phone }}</td>
+              <td>{{ s.student_status }}</td>
+              <td class="text-center">
+                <img *ngIf="s.photo" [src]="getPhotoUrl(s.photo)" alt="Photo" width="40" height="40"
+                  class="rounded-circle border object-fit-cover" />
+                <span *ngIf="!s.photo" class="text-muted small">—</span>
+              </td>
+              <td class="text-center">
+                <div class="d-flex justify-content-center gap-1">
+                  <a class="btn btn-sm btn-outline-primary" [routerLink]="['/students/edit', s._id]"
+                    title="Edit Student">
+                    <i class="bi bi-pencil-square"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Show More Button -->
+        <div class="d-flex justify-content-center my-3" *ngIf="visibleStudents.length < students.length">
+          <button class="btn btn-outline-primary" (click)="loadMore()" [disabled]="isLoading">
+            <i class="bi bi-arrow-down-circle me-1"></i> Show More
+          </button>
+        </div>
+      </div>
+
+      <!-- No data placeholder -->
+      <div *ngIf="!isLoading && !visibleStudents.length" class="text-center text-muted py-5">
+        <i class="bi bi-people display-1 d-block mb-3 opacity-25"></i>
+        <p class="mb-0">No students found.</p>
+        <p class="small">Try adjusting your filters or add a new student.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden print area -->
+<div id="print-area" style="display:none">
+  <style>
+    /* Add your print styles here */
+  </style>
+  <div class="print-wrapper">
+    <div class="report-header">
+      <div class="school-info">
+        <strong>📘 Govt Pilot High School No.1</strong>
+        <span>Student Information Report</span>
+      </div>
+    </div>
+    <h2 class="text-center">Student Details</h2>
+    <div class="table-responsive">
+      <table class="table" cellpadding="0" cellspacing="0">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Adm. No.</th>
+            <th>Name</th>
+            <th>Father's Name</th>
+            <th>Class</th>
+            <th>Sec</th>
+            <th>CNIC</th>
+            <th>D.O.B.</th>
+            <th>Phone</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let s of printStudents; let i = index">
+            <td class="text-center">{{ i + 1 }}</td>
+            <td class="text-center">{{ s.admissionNo }}</td>
+            <td class="text-start">{{ s.firstName }} {{ s.lastName }}</td>
+            <td class="text-start">{{ s.fatherName }}</td>
+            <!-- In print, also show class name robustly -->
+            <td class="text-center">{{ s.class.className || s.class.className || s.class }}</td>
+            <td class="text-center">{{ s.section }}</td>
+            <td class="text-center">{{ s.cnic }}</td>
+            <td class="text-center">{{ s.dateOfBirth | date:'yyyy-MM-dd' }}</td>
+            <td class="text-center">{{ s.phone }}</td>
+            <td class="text-center"><span class="status-badge">{{ s.student_status }}</span></td>
+          </tr>
+          <tr *ngIf="printStudents.length === 0">
+            <td colspan="10" class="text-center">No student records found.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

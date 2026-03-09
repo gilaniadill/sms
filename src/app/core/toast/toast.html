@@ -1,0 +1,18 @@
+<div class="position-fixed top-0 end-0 p-3" style="z-index: 1055;">
+  <ng-container *ngIf="toastService.toast$ | async as toast">
+    <div
+      *ngIf="toast.visible"
+      class="toast show text-bg-{{ toast.type }} border-0"
+      role="alert"
+    >
+      <div class="d-flex">
+        <div class="toast-body">{{ toast.message }}</div>
+        <button
+          type="button"
+          class="btn-close btn-close-white me-2 m-auto"
+          (click)="toastService.hide()"
+        ></button>
+      </div>
+    </div>
+  </ng-container>
+</div>

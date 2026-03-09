@@ -1,0 +1,72 @@
+/* Inherit global font – already set in app component */
+.class-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-radius: 0.75rem;
+  background: white;
+}
+
+.class-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1) !important;
+}
+
+.class-icon {
+  width: 48px;
+  height: 48px;
+  background-color: rgba(30, 43, 58, 0.05);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.student-count {
+  line-height: 1.2;
+  font-size: 2rem;
+}
+
+.btn-outline-primary {
+  border-color: #dee2e6;
+  color: #1e2b3a;
+  transition: all 0.2s;
+}
+
+.btn-outline-primary:hover {
+  background-color: #1e2b3a;
+  border-color: #1e2b3a;
+  color: #fff;
+}
+
+.btn-outline-primary i {
+  transition: transform 0.2s;
+}
+
+.btn-outline-primary:hover i {
+  transform: translateX(3px);
+}
+
+/* Card header */
+.card-header {
+  border-bottom-width: 2px !important;
+}
+
+/* Chart container */
+canvas {
+  width: 100%;
+  height: auto;
+  max-height: 400px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .class-icon {
+    width: 40px;
+    height: 40px;
+  }
+  .class-icon i {
+    font-size: 1.5rem;
+  }
+  .student-count {
+    font-size: 1.75rem;
+  }
+}

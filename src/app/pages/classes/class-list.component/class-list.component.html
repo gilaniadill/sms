@@ -1,0 +1,130 @@
+<div class="container-fluid mt-4">
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-white py-3 d-flex align-items-center border-bottom border-2" style="border-bottom-color: #1e2b3a !important;">
+      <i class="bi bi-building-fill me-2 fs-4" style="color: #1e2b3a;"></i>
+      <h5 class="mb-0 fw-semibold" style="color: #1e2b3a;">Class Management</h5>
+    </div>
+
+    <div class="card-body">
+      <!-- Class Form -->
+      <form [formGroup]="classForm" (ngSubmit)="submit()">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Class Name</label>
+            <input type="text" class="form-control" formControlName="className" placeholder="e.g. 10">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Sections (comma separated)</label>
+            <input type="text" class="form-control" formControlName="sections" placeholder="e.g. A, B, C">
+          </div>
+          <div class="col-md-2">
+            <button type="submit" class="btn btn-success w-100" [disabled]="classForm.invalid || isSubmitting">
+              {{ editingId ? 'Update' : 'Add' }}
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <hr class="my-4" />
+
+      <!-- Classes Table -->
+      <div class="table-responsive rounded border">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Class</th>
+              <th>Sections</th>
+              <th>Groups & Subjects</th>
+              <th class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let c of visibleClasses; trackBy: trackById">
+              <td class="fw-semibold">{{ c.className }}</td>
+              <td>
+                <span *ngFor="let sec of c.sections" class="badge bg-info bg-opacity-10 text-info me-1">{{ sec }}</span>
+              </td>
+              <td>
+                <div *ngFor="let g of c.groups" class="mb-2 p-2 border rounded">
+                  <div class="d-flex align-items-center">
+                    <strong class="me-3">{{ g.name }}</strong>
+                    <button class="btn btn-sm btn-outline-primary me-1" (click)="openEditGroupModal(c._id, g)"><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" (click)="deleteGroup(c._id, g._id, g.name)"><i class="bi bi-trash"></i></button>
+                  </div>
+                  <div class="mt-1">
+                    <span *ngFor="let subj of g.subjects" class="badge bg-success bg-opacity-10 text-success me-1">
+                      {{ subj.name }} ({{ subj.maxMarks }})
+                    </span>
+                  </div>
+                </div>
+                <button class="btn btn-sm btn-outline-success mt-1" (click)="openAddGroupModal(c._id)">
+                  <i class="bi bi-plus-circle"></i> Add Group
+                </button>
+              </td>
+              <td class="text-center">
+                <button class="btn btn-sm btn-outline-primary me-1" (click)="edit(c)" title="Edit Class">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" (click)="deleteClass(c._id, c.className)" title="Delete Class">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Load More -->
+      <div class="text-center mt-4" *ngIf="visibleClasses.length < classes.length">
+        <button class="btn btn-outline-primary px-4" (click)="loadMore()">
+          <i class="bi bi-arrow-down-circle me-1"></i> Load More
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Group Modal -->
+<div class="modal fade show" *ngIf="showGroupModal" style="display: block; background: rgba(0,0,0,0.5);" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ editingGroupId ? 'Edit' : 'Add' }} Group</h5>
+        <button type="button" class="btn-close" (click)="closeGroupModal()"></button>
+      </div>
+      <div class="modal-body">
+        <form [formGroup]="groupForm">
+          <div class="mb-3">
+            <label class="form-label">Group Name</label>
+            <input type="text" class="form-control" formControlName="name">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Subjects</label>
+            <button type="button" class="btn btn-sm btn-outline-primary mb-2" (click)="addSubject()">
+              <i class="bi bi-plus"></i> Add Subject
+            </button>
+            <div formArrayName="subjects">
+              <div *ngFor="let sub of subjectsArray.controls; let i = index" [formGroupName]="i" class="row mb-2">
+                <div class="col">
+                  <input type="text" class="form-control" formControlName="name" placeholder="Subject name">
+                </div>
+                <div class="col">
+                  <input type="number" class="form-control" formControlName="maxMarks" placeholder="Max marks">
+                </div>
+                <div class="col-auto">
+                  <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeSubject(i)">
+                    <i class="bi bi-x"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeGroupModal()">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="saveGroup()" [disabled]="groupForm.invalid">Save</button>
+      </div>
+    </div>
+  </div>
+</div>

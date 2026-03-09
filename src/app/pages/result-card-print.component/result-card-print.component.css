@@ -1,0 +1,21 @@
+@media print {
+  .no-print {
+    display: none;
+  }
+  .page-break {
+    page-break-after: always;
+  }
+  .result-card {
+    page-break-inside: avoid;
+    padding: 15px;
+  }
+}
+.result-card-container {
+  margin-bottom: 20px;
+}
+.result-card {
+  border: 1px solid #ccc;
+  padding: 20px;
+  border-radius: 8px;
+  background: white;
+}

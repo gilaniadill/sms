@@ -1,0 +1,162 @@
+<div class="container mt-4">
+  <h2>Exam Result Entry</h2>
+
+  <!-- Filter Row -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <label for="class" class="form-label">Class</label>
+      <select id="class" class="form-select" [(ngModel)]="selectedClassId" (change)="onClassChange()">
+        <option value="">Select Class</option>
+        <option *ngFor="let c of classes" [value]="c._id">{{ c.className }}</option>
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label for="section" class="form-label">Section</label>
+      <select id="section" class="form-select" [(ngModel)]="selectedSection">
+        <option value="">Select Section</option>
+        <option *ngFor="let s of sections" [value]="s">{{ s }}</option>
+      </select>
+    </div>
+    <!-- Group dropdown – only appears if groups exist for the selected class -->
+    <div class="col-md-3" *ngIf="groups.length">
+      <label for="group" class="form-label">Group</label>
+      <select id="group" class="form-select" [(ngModel)]="selectedGroup" (change)="onGroupChange()">
+        <option value="">All Groups</option>
+        <option *ngFor="let g of groups" [value]="g">{{ g }}</option>
+      </select>
+    </div>
+    <!-- Exam dropdown -->
+    <div class="col-md-3" [class]="groups.length ? 'col-md-3' : 'col-md-3'">
+      <label for="exam" class="form-label">Exam</label>
+      <select id="exam" class="form-select" [(ngModel)]="selectedExamId">
+        <option value="">Select Exam</option>
+        <option *ngFor="let e of exams" [value]="e._id">{{ e.name }} ({{ e.academicYear }})</option>
+      </select>
+    </div>
+    <div class="col-md-3 d-flex align-items-end">
+      <button class="btn btn-primary w-100" (click)="loadData()" [disabled]="loading">
+        <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
+        Load
+      </button>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="d-flex gap-2 mb-3 flex-wrap">
+    <button class="btn btn-success" (click)="saveAll()" [disabled]="saving || !gridRows.length">
+      <span *ngIf="saving" class="spinner-border spinner-border-sm me-1"></span>
+      <i class="bi bi-save me-1"></i> Save All
+    </button>
+    <button class="btn btn-danger" (click)="deleteSelected()" [disabled]="selectedStudentIds.size === 0">
+      <i class="bi bi-trash3 me-1"></i> Delete Selected
+    </button>
+    <button class="btn btn-info" (click)="printAll()" [disabled]="!gridRows.length">
+      <i class="bi bi-printer me-1"></i> Print All (Cards)
+    </button>
+    <button class="btn btn-secondary" (click)="printSelected()" [disabled]="selectedStudentIds.size === 0">
+      <i class="bi bi-printer me-1"></i> Print Selected (Cards)
+    </button>
+    <button class="btn btn-outline-dark" (click)="printList()" [disabled]="!gridRows.length">
+      <i class="bi bi-list-columns me-1"></i> Print List
+    </button>
+    <button class="btn btn-outline-success" (click)="printListSelected()" [disabled]="selectedStudentIds.size === 0">
+      <i class="bi bi-list-check me-1"></i> Print List Selected
+    </button>
+  </div>
+
+  <!-- Data Table -->
+  <div class="table-responsive" *ngIf="gridRows.length">
+    <table class="table table-bordered table-striped align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th style="width: 40px;">
+            <input type="checkbox" (change)="toggleAll($event)" [checked]="allSelected">
+          </th>
+          <th>Admission No</th>
+          <th>Student Name</th>
+          <th *ngFor="let subj of subjects">{{ subj.name }}</th>   <!-- ✅ use subj.name -->
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of gridRows; trackBy: trackByStudentId">
+          <td>
+            <input type="checkbox" [(ngModel)]="row.selected" (change)="onRowSelect()">
+          </td>
+          <td>{{ row.admissionNo }}</td>
+          <td>{{ row.name }}</td>
+          <td *ngFor="let subj of subjects">
+            <input type="number" class="form-control form-control-sm" style="width: 80px;"
+                   [(ngModel)]="row.marks[subj.name]"  
+                   min="0" [max]="subj.maxMarks">      <!-- ✅ bind max to subj.maxMarks -->
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div *ngIf="!gridRows.length && !loading" class="alert alert-info">
+    <i class="bi bi-info-circle me-2"></i> No students found. Please select filters and click Load.
+  </div>
+</div>
+
+<!-- Hidden print area for list view -->
+<div id="print-list-area" style="display:none">
+  <style>
+    /* print styles – same as before, but with adjustments for subject names */
+    @media print {
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 0.3in; background: white; font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #1e293b; }
+      #print-list-area, #print-list-area * { visibility: visible; }
+      #print-list-area { position: absolute; left: 0; top: 0; width: 100%; background: white; display: block !important; }
+      @page { size: landscape; margin: 0.3in; }
+      .report-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.2in; }
+      .school-info strong { font-size: 18pt; display: block; }
+      .school-info span { font-size: 12pt; color: #475569; }
+      h2 { font-size: 16pt; margin: 0.1in 0; }
+      h4 { font-size: 12pt; margin: 0.1in 0 0.2in; color: #334155; }
+      table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+      th { background-color: #334155 !important; color: white !important; font-weight: 600; padding: 6px 4px; border: 1px solid #1e293b; text-align: center; }
+      td { padding: 5px 4px; border: 1px solid #cbd5e1; text-align: center; }
+      .report-footer { margin-top: 0.2in; font-size: 9pt; color: #64748b; border-top: 1px dashed #cbd5e1; padding-top: 0.1in; display: flex; justify-content: space-between; }
+    }
+  </style>
+  <div class="print-wrapper">
+    <div class="report-header">
+      <div class="school-info">
+        <strong>Your School Name</strong>
+        <span>Exam Result List</span>
+      </div>
+      <div class="date-info">Date: {{ currentDate | date:'dd/MM/yyyy' }}</div>
+    </div>
+    <h2>Exam: {{ selectedExamName }} - {{ selectedAcademicYear }}</h2>
+    <h4>Class: {{ selectedClassName }} - Section {{ selectedSection }}</h4>
+    <table class="table" cellpadding="0" cellspacing="0">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Adm. No.</th>
+          <th>Student Name</th>
+          <th *ngFor="let subj of subjects">{{ subj.name }}</th>   <!-- ✅ use subj.name -->
+          <th>Total</th>
+          <th>%age</th>
+          <th>Grade</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of printListData; let i = index">
+          <td>{{ i + 1 }}</td>
+          <td>{{ row.admissionNo }}</td>
+          <td>{{ row.name }}</td>
+          <td *ngFor="let subj of subjects">{{ row.marks[subj.name] || 0 }}</td> <!-- ✅ use subj.name -->
+          <td>{{ row.total }}</td>
+          <td>{{ row.percentage.toFixed(1) }}</td>
+          <td>{{ row.grade }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="report-footer">
+      <span>Generated on {{ currentDate | date:'fullDate' }}</span>
+      <span class="page-count"></span>
+    </div>
+  </div>
+</div>

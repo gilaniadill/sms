@@ -1,0 +1,263 @@
+/* Inherit global font (Inter) – already set in app component */
+
+
+/* Card header custom border */
+.card-header {
+  border-bottom-width: 2px !important;
+}
+
+/* Badge styles */
+.badge.bg-info.bg-opacity-10 {
+  background-color: rgba(13, 202, 240, 0.1) !important;
+}
+
+.badge.bg-secondary.bg-opacity-10 {
+  background-color: rgba(108, 117, 125, 0.1) !important;
+}
+
+/* Table improvements */
+.table th {
+  font-weight: 600;
+  color: #1e2b3a;
+  white-space: nowrap;
+}
+
+.table td {
+  vertical-align: middle;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(30, 43, 58, 0.02);
+}
+
+/* Image fit */
+.object-fit-cover {
+  object-fit: cover;
+}
+
+/* Action buttons */
+.btn-outline-primary {
+  border-color: #dee2e6;
+  color: #1e2b3a;
+}
+
+.btn-outline-primary:hover {
+  background-color: #1e2b3a;
+  border-color: #1e2b3a;
+  color: #fff;
+}
+
+.btn-outline-danger:hover {
+  background-color: #dc3545;
+  border-color: #dc3545;
+  color: #fff;
+}
+
+/* No data icon */
+.opacity-25 {
+  opacity: 0.25;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .table-responsive {
+    border: 0;
+  }
+  
+  .card-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .btn-success {
+    width: 100%;
+  }
+}
+
+/* Print styles */
+@media print {
+  /* Hide everything except the print area */
+  body * {
+    visibility: hidden;
+  }
+  #print-area, #print-area * {
+    visibility: visible;
+  }
+  #print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: white;
+    display: block !important; /* Override inline style */
+  }
+  /* Remove any background colors, shadows, etc. */
+  .card, .btn, .nav, .sidebar {
+    display: none !important;
+  }
+  /* Table styling for print */
+  .table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  .table th, .table td {
+    border: 1px solid #000;
+    padding: 6px;
+    text-align: left;
+  }
+  .table th {
+    background-color: #f2f2f2 !important;
+    -webkit-print-color-adjust: exact; /* Force background on print */
+    print-color-adjust: exact;
+  }
+  h2 {
+    text-align: center;
+    font-size: 18pt;
+    margin-bottom: 20px;
+  }
+}
+
+.skeleton-box {
+  display: inline-block;
+  height: 1.2em;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+
+/* Print */
+
+ @media print {
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        background: white;
+        font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        color: #1e293b;
+        line-height: 1.4;
+      }
+      .print-wrapper {
+        max-width: 100%;
+        margin: 0 auto;
+        padding: 0.2in; /* reduced margins */
+      }
+      @page {
+        size: landscape;
+        margin: 0.3in; /* smaller margins give more table space */
+      }
+      h2 {
+        font-size: 20pt;
+        font-weight: 600;
+        margin: 0 0 0.15in 0;
+        color: #0f172a;
+        border-bottom: 1.5px solid #334155;
+        padding-bottom: 0.05in;
+      }
+      .report-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 0.2in;
+      }
+      .school-info {
+        font-size: 11pt;
+        color: #475569;
+      }
+      .school-info strong {
+        font-size: 16pt;
+        color: #0f172a;
+        display: block;
+      }
+      .date-info {
+        text-align: right;
+        font-size: 10pt;
+        color: #475569;
+      }
+
+      /* Table – compact and fixed */
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 9.5pt; /* smaller base font */
+        table-layout: fixed;
+        word-wrap: break-word;
+      }
+      .table th {
+        background-color: #334155 !important;
+        color: white !important;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.2px;
+        padding: 6px 3px; /* tighter padding */
+        border: 1px solid #1e293b;
+        vertical-align: middle;
+        text-align: center;
+      }
+      .table td {
+        padding: 5px 3px; /* tighter padding */
+        border: 1px solid #cbd5e1;
+        vertical-align: middle;
+      }
+      /* Allow long words/numbers to break */
+      .table td {
+        word-break: break-word;
+        overflow-wrap: break-word;
+      }
+      .table tbody tr {
+        page-break-inside: avoid;
+      }
+      .table tbody tr:nth-child(even) {
+        background-color: #f8fafc;
+      }
+      /* Text alignment */
+      .text-start { text-align: left; }
+      .text-center { text-align: center; }
+
+      /* Status badge – smaller */
+      .status-badge {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 20px;
+        font-size: 8.5pt;
+        font-weight: 600;
+        text-transform: capitalize;
+        background-color: #e2e8f0;
+        color: #1e293b;
+        max-width: 100%;
+      }
+
+      /* Column width distribution (adjust percentages to fit your data) */
+      th:nth-child(1) { width: 3%; }  /* # */
+      th:nth-child(2) { width: 7%; }  /* Admission No */
+      th:nth-child(3) { width: 14%; } /* Name (can be wider) */
+      th:nth-child(4) { width: 12%; } /* Father */
+      th:nth-child(5) { width: 5%; }  /* Class */
+      th:nth-child(6) { width: 5%; }  /* Section */
+      th:nth-child(7) { width: 10%; } /* CNIC */
+      th:nth-child(8) { width: 9%; }  /* D.O.B (YYYY-MM-DD) */
+      th:nth-child(9) { width: 8%; }  /* Phone */
+      th:nth-child(10){ width: 7%; }  /* Status */
+
+      .report-footer {
+        margin-top: 0.2in;
+        font-size: 9pt;
+        color: #64748b;
+        border-top: 1px dashed #cbd5e1;
+        padding-top: 0.08in;
+        display: flex;
+        justify-content: space-between;
+      }
+      .page-count:after {
+        content: "Page " counter(page);
+      }
+    }

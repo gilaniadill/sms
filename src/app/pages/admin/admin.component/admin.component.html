@@ -1,0 +1,111 @@
+<div class="container mt-4">
+  <h3 class="mb-4">
+    <i class="bi bi-shield-lock me-2"></i>Admin Management
+  </h3>
+
+  <!-- Loading Spinner (initial) -->
+  <div *ngIf="loading" class="text-center my-5">
+    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <!-- Add Admin Card -->
+  <div class="card shadow-sm border-0 mb-4" *ngIf="!loading">
+    <div class="card-header bg-white py-3">
+      <h5 class="mb-0 fw-semibold">
+        <i class="bi bi-person-plus-fill me-2 text-primary"></i>Add New Admin
+      </h5>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <input type="text" class="form-control form-control-lg" placeholder="Full Name" [(ngModel)]="name">
+        </div>
+        <div class="col-md-4">
+          <input type="email" class="form-control form-control-lg" placeholder="Email Address" [(ngModel)]="email">
+        </div>
+        <div class="col-md-4">
+          <div class="input-group">
+            <input [type]="showPassword ? 'text' : 'password'" class="form-control form-control-lg" placeholder="Password" [(ngModel)]="password">
+            <button class="btn btn-outline-secondary" type="button" (click)="showPassword = !showPassword">
+              <i class="bi" [ngClass]="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary mt-3 px-4" (click)="addAdmin()" [disabled]="addLoading">
+        <span *ngIf="addLoading" class="spinner-border spinner-border-sm me-2"></span>
+        <i class="bi bi-plus-circle me-1" *ngIf="!addLoading"></i>
+        {{ addLoading ? 'Adding...' : 'Add Admin' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Admin List Card -->
+  <div class="card shadow-sm border-0" *ngIf="!loading">
+    <div class="card-header bg-white py-3">
+      <h5 class="mb-0 fw-semibold">
+        <i class="bi bi-people-fill me-2 text-primary"></i>Admin List
+      </h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th class="text-center" style="width: 200px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let admin of admins; trackBy: trackById">
+              <td>
+                <span *ngIf="editingAdminId !== admin._id">{{ admin.name }}</span>
+                <input *ngIf="editingAdminId === admin._id" type="text" [(ngModel)]="editName" class="form-control form-control-sm">
+              </td>
+              <td>
+                <span *ngIf="editingAdminId !== admin._id">{{ admin.email }}</span>
+                <input *ngIf="editingAdminId === admin._id" type="email" [(ngModel)]="editEmail" class="form-control form-control-sm">
+              </td>
+              <td class="text-center">
+                <!-- Normal View -->
+                <span *ngIf="editingAdminId !== admin._id">
+                  <button class="btn btn-outline-primary btn-sm me-1" (click)="startEdit(admin)" title="Edit">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button class="btn btn-outline-danger btn-sm" (click)="removeAdmin(admin._id)" title="Delete" [disabled]="deleteLoading">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </span>
+
+                <!-- Edit Mode -->
+                <span *ngIf="editingAdminId === admin._id">
+                  <div class="d-flex align-items-center">
+                    <div class="input-group input-group-sm me-2" style="width: 180px;">
+                      <input [type]="showEditPassword ? 'text' : 'password'" class="form-control" placeholder="New password" [(ngModel)]="editPassword">
+                      <button class="btn btn-outline-secondary" type="button" (click)="showEditPassword = !showEditPassword">
+                        <i class="bi" [ngClass]="showEditPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+                      </button>
+                    </div>
+                    <button class="btn btn-success btn-sm me-1" (click)="updateAdmin()" [disabled]="updateLoading">
+                      <span *ngIf="updateLoading" class="spinner-border spinner-border-sm me-1"></span>
+                      <i class="bi bi-check-lg" *ngIf="!updateLoading"></i>
+                    </button>
+                    <button class="btn btn-secondary btn-sm" (click)="cancelEdit()">
+                      <i class="bi bi-x-lg"></i>
+                    </button>
+                  </div>
+                </span>
+              </td>
+            </tr>
+            <tr *ngIf="admins.length === 0">
+              <td colspan="3" class="text-center text-muted py-4">No admins found.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
