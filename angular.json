@@ -25,26 +25,26 @@
               }
             ],
             "styles": [
-               "node_modules/bootstrap/dist/css/bootstrap.min.css",
-               "src/styles.css"
+              "node_modules/bootstrap/dist/css/bootstrap.min.css",
+              "src/styles.css"
             ]
           },
           "configurations": {
             "production": {
-  "budgets": [
-    {
-      "type": "initial",
-      "maximumWarning": "1mb",
-      "maximumError": "2mb"
-    },
-    {
-      "type": "anyComponentStyle",
-      "maximumWarning": "50kb",
-      "maximumError": "100kb"
-    }
-  ],
-  "outputHashing": "all"
-},
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "1mb",
+                  "maximumError": "2mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "50kb",
+                  "maximumError": "100kb"
+                }
+              ],
+              "outputHashing": "all"
+            },
             "development": {
               "optimization": false,
               "extractLicenses": false,
