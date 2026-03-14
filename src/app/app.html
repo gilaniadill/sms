@@ -1,6 +1,6 @@
 <!-- Mobile toggle button (hidden on desktop) -->
 <button 
-  class="btn btn-dark d-md-none position-fixed top-0 start-0 m-3 z-3" 
+  class="btn btn-dark d-md-none position-fixed top-0 start-0 m-3 z-3 no-print" 
   type="button" 
   (click)="toggleSidebar()"
   *ngIf="!isSidebarOpen && showSidebar">
@@ -9,7 +9,7 @@
 
 <!-- Overlay for mobile when sidebar is open -->
 <div 
-  class="sidebar-overlay d-md-none" 
+  class="sidebar-overlay d-md-none no-print" 
   *ngIf="isSidebarOpen && showSidebar" 
   (click)="closeSidebar()">
 </div>

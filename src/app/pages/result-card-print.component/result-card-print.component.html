@@ -4,11 +4,35 @@
   <hr>
 </div>
 
-<div *ngIf="loading" class="text-center mt-5">
-  <div class="spinner-border" role="status"></div>
-  <p>Loading result cards...</p>
+<!-- Skeleton Loader (shown while loading) -->
+<div *ngIf="loading" class="skeleton-loader">
+  <div class="skeleton-card" *ngFor="let i of [1,2,3]">
+    <div class="skeleton-header"></div>
+    <div class="skeleton-student-info">
+      <div class="skeleton-avatar"></div>
+      <div class="skeleton-details">
+        <div class="skeleton-line" style="width: 80%;"></div>
+        <div class="skeleton-line" style="width: 60%;"></div>
+        <div class="skeleton-line" style="width: 70%;"></div>
+        <div class="skeleton-line" style="width: 50%;"></div>
+      </div>
+    </div>
+    <div class="skeleton-table">
+      <div class="skeleton-row" *ngFor="let j of [1,2,3]">
+        <div class="skeleton-cell" style="width: 40%;"></div>
+        <div class="skeleton-cell" style="width: 30%;"></div>
+        <div class="skeleton-cell" style="width: 30%;"></div>
+      </div>
+    </div>
+    <div class="skeleton-signatures">
+      <div class="skeleton-line" style="width: 30%;"></div>
+      <div class="skeleton-line" style="width: 30%;"></div>
+      <div class="skeleton-line" style="width: 30%;"></div>
+    </div>
+  </div>
 </div>
 
+<!-- Error State -->
 <div *ngIf="error" class="alert alert-danger text-center mt-5">
   <p>{{ error }}</p>
   <button class="btn btn-primary" (click)="retry()">Retry</button>
@@ -19,61 +43,81 @@
 <div id="print-cards" *ngIf="!loading && results.length > 0">
   <div *ngFor="let res of results; let i = index" class="result-card-container">
     <div class="result-card">
-      <!-- School Header -->
-      <div class="text-center mb-4">
-        <h2>School Name</h2>
+      <!-- School Header with color -->
+      <div class="school-header text-white text-center py-3 mb-4" style="background-color: #0d6efd; border-radius: 8px 8px 0 0;">
+        <h2 class="mb-0">Govt Pilot High School No.1 Muzaffarabad</h2>
         <h4>{{ res.exam?.name || 'N/A' }} - {{ res.exam?.academicYear || 'N/A' }}</h4>
-        <h5>Group: {{ res.exam?.group }}</h5>
+        <h5 *ngIf="res.exam?.group">Group: {{ res.exam?.group }}</h5>
       </div>
 
-      <!-- Student Info Row -->
-      <div class="row">
-        <div class="col-8">
-          <p><strong>Name:</strong> {{ res.student?.firstName || '' }} {{ res.student?.lastName || '' }}</p>
-          <p><strong>Father's Name:</strong> {{ res.student?.fatherName || '' }}</p>
-          <p><strong>Admission No:</strong> {{ res.student?.admissionNo || '' }}</p>
-          <p><strong>Class:</strong> {{ res.student?.class?.className || '' }} - Section {{ res.student?.section || '' }}</p>
-          <p><strong>Date of Birth:</strong> {{ (res.student?.dateOfBirth | date:'dd/MM/yyyy') || '' }}</p>
-        </div>
-        <div class="col-4 text-center">
-          <img [src]="getPhotoUrl(res.student?.photo)" alt="Student Photo" class="img-fluid rounded" style="max-height: 120px;">
+      <!-- Student Info Row with subtle background -->
+      <div class="student-info p-3 mb-3" style="background-color: #f8f9fa; border-radius: 8px;">
+        <div class="row">
+          <div class="col-8">
+            <p><strong>Name:</strong> {{ res.student?.firstName || '' }} {{ res.student?.lastName || '' }}</p>
+            <p><strong>Father's Name:</strong> {{ res.student?.fatherName || '' }}</p>
+            <p><strong>Admission No:</strong> {{ res.student?.admissionNo || '' }}</p>
+            <p><strong>Class:</strong> {{ res.student?.class?.className || '' }} - <strong>Section</strong> {{ res.student?.section || '' }}</p>
+            <p><strong>Date of Birth:</strong> {{ (res.student?.dateOfBirth | date:'dd/MM/yyyy') || '' }}</p>
+          </div>
+          <div class="col-4 text-center">
+            <img [src]="res.student?.photo || 'assets/avatar.png'" alt="Student Photo" class="img-fluid rounded border" style="max-height: 120px;">
+          </div>
         </div>
       </div>
 
-      <!-- Marks Table -->
+      <!-- Marks Table with colored header (corrected column order) -->
       <table class="table table-bordered mt-3">
-        <thead class="table-dark">
+        <thead class="text-white" style="background-color: #0d6efd;">
           <tr>
             <th>Subject</th>
-            <th>Marks Obtained</th>
             <th>Maximum Marks</th>
+            <th>Marks Obtained</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let subject of res.exam?.subjects || []">
             <td>{{ subject.name }}</td>
-            <td>{{ res.marks?.[subject] || 0 }}</td>
-            <td>{{ res.exam?.maxMarks || 100 }}</td>
+            <td>{{ subject.maxMarks }}</td>
+            <td>{{ res.marks?.[subject.name] || 0 }}</td>
           </tr>
           <tr class="table-info">
             <td colspan="1"><strong>Total</strong></td>
-            <td><strong>{{ res.total || 0 }}</strong></td>
-            <td><strong>{{ (res.exam?.subjects?.length || 0) * (res.exam?.maxMarks || 100) }}</strong></td>
+            <td><strong>{{ getTotalMaxMarks(res.exam) }}</strong></td>
+            <td><strong>{{ getTotalMarks(res) }}</strong></td>
           </tr>
           <tr>
             <td colspan="3">
-              <strong>Percentage:</strong> {{ (res.percentage?.toFixed(2)) || '0' }}% &nbsp; | &nbsp;
-              <strong>Grade:</strong> {{ res.grade || 'N/A' }}
+              <strong>Percentage:</strong> {{ getPercentage(res).toFixed(2) }}% &nbsp; | &nbsp;
+              <strong>Grade:</strong> 
+              <span [ngClass]="{
+                'text-success fw-bold': getGrade(res) === 'A+',
+                'text-primary fw-bold': getGrade(res) === 'A',
+                'text-info fw-bold': getGrade(res) === 'B',
+                'text-warning fw-bold': getGrade(res) === 'C',
+                'text-danger fw-bold': getGrade(res) === 'D' || getGrade(res) === 'F'
+              }">
+                {{ getGrade(res) }}
+              </span>
             </td>
           </tr>
         </tbody>
       </table>
 
-      <!-- Signatures -->
-      <div class="row mt-4">
-        <div class="col-4 text-center">_________________<br>Class Teacher</div>
-        <div class="col-4 text-center">_________________<br>Principal</div>
-        <div class="col-4 text-center">_________________<br>Parent's Signature</div>
+      <!-- Signatures (with mt-6 class for spacing) -->
+      <div class="row mt-6">
+        <div class="col-4 text-center">
+          _________________<br>
+          <span class="fw-semibold">Class Teacher</span>
+        </div>
+        <div class="col-4 text-center">
+          _________________<br>
+          <span class="fw-semibold">Principal</span>
+        </div>
+        <div class="col-4 text-center">
+          _________________<br>
+          <span class="fw-semibold">Parent's Signature</span>
+        </div>
       </div>
     </div>
     <div *ngIf="i < results.length - 1" class="page-break"></div>

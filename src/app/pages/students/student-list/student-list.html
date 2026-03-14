@@ -170,7 +170,6 @@
               <td><span class="badge bg-secondary bg-opacity-10 text-secondary">{{ s.admissionNo }}</span></td>
               <td class="fw-semibold">{{ s.firstName }} {{ s.lastName }}</td>
               <td>{{ s.fatherName }}</td>
-              <!-- Class name display with fallback -->
               <td>
                 <span class="badge bg-info bg-opacity-10 text-info">
                   {{ s.class.className }}
@@ -182,7 +181,7 @@
               <td>{{ s.phone }}</td>
               <td>{{ s.student_status }}</td>
               <td class="text-center">
-                <img *ngIf="s.photo" [src]="getPhotoUrl(s.photo)" alt="Photo" width="40" height="40"
+                <img [src]="s.photo || 'assets/avatar.png'" alt="Photo" width="40" height="40"
                   class="rounded-circle border object-fit-cover" />
                 <span *ngIf="!s.photo" class="text-muted small">—</span>
               </td>
@@ -192,6 +191,10 @@
                     title="Edit Student">
                     <i class="bi bi-pencil-square"></i>
                   </a>
+                  <button class="btn btn-sm btn-outline-danger" (click)="deleteStudent(s._id, s.firstName + ' ' + s.lastName)"
+                    title="Delete Student">
+                    <i class="bi bi-trash"></i>
+                  </button>
                 </div>
               </td>
             </tr>
@@ -219,51 +222,70 @@
 <!-- Hidden print area -->
 <div id="print-area" style="display:none">
   <style>
-    /* Add your print styles here */
+    /* Print styles */
+    @media print {
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 0.2in; background: white; font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #1e293b; line-height: 1.4; }
+      @page { size: landscape; margin: 0.3in; }
+      .print-wrapper { max-width: 100%; margin: 0 auto; }
+      h2 { font-size: 20pt; margin: 0 0 0.15in 0; color: #0f172a; border-bottom: 1.5px solid #334155; padding-bottom: 0.05in; }
+      .report-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.2in; }
+      .school-info strong { font-size: 16pt; color: #0f172a; display: block; }
+      .school-info span { font-size: 11pt; color: #475569; }
+      .table { width: 100%; border-collapse: collapse; font-size: 9.5pt; table-layout: fixed; word-wrap: break-word; }
+      .table th { background-color: #334155 !important; color: white !important; font-weight: 600; padding: 6px 3px; border: 1px solid #1e293b; text-align: center; }
+      .table td { padding: 5px 3px; border: 1px solid #cbd5e1; vertical-align: middle; word-break: break-word; }
+      .table tbody tr { page-break-inside: avoid; }
+      .table tbody tr:nth-child(even) { background-color: #f8fafc; }
+      .status-badge { display: inline-block; padding: 2px 6px; border-radius: 20px; font-size: 8.5pt; font-weight: 600; background-color: #e2e8f0; color: #1e293b; }
+      .report-footer { margin-top: 0.2in; font-size: 9pt; color: #64748b; border-top: 1px dashed #cbd5e1; padding-top: 0.08in; display: flex; justify-content: space-between; }
+      .page-count:after { content: "Page " counter(page); }
+    }
   </style>
   <div class="print-wrapper">
     <div class="report-header">
       <div class="school-info">
-        <strong>📘 Govt Pilot High School No.1</strong>
+        <strong>📘 School Name</strong>
         <span>Student Information Report</span>
       </div>
     </div>
     <h2 class="text-center">Student Details</h2>
-    <div class="table-responsive">
-      <table class="table" cellpadding="0" cellspacing="0">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Adm. No.</th>
-            <th>Name</th>
-            <th>Father's Name</th>
-            <th>Class</th>
-            <th>Sec</th>
-            <th>CNIC</th>
-            <th>D.O.B.</th>
-            <th>Phone</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let s of printStudents; let i = index">
-            <td class="text-center">{{ i + 1 }}</td>
-            <td class="text-center">{{ s.admissionNo }}</td>
-            <td class="text-start">{{ s.firstName }} {{ s.lastName }}</td>
-            <td class="text-start">{{ s.fatherName }}</td>
-            <!-- In print, also show class name robustly -->
-            <td class="text-center">{{ s.class.className || s.class.className || s.class }}</td>
-            <td class="text-center">{{ s.section }}</td>
-            <td class="text-center">{{ s.cnic }}</td>
-            <td class="text-center">{{ s.dateOfBirth | date:'yyyy-MM-dd' }}</td>
-            <td class="text-center">{{ s.phone }}</td>
-            <td class="text-center"><span class="status-badge">{{ s.student_status }}</span></td>
-          </tr>
-          <tr *ngIf="printStudents.length === 0">
-            <td colspan="10" class="text-center">No student records found.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <table class="table" cellpadding="0" cellspacing="0">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Adm. No.</th>
+          <th>Name</th>
+          <th>Father's Name</th>
+          <th>Class</th>
+          <th>Sec</th>
+          <th>CNIC</th>
+          <th>D.O.B.</th>
+          <th>Phone</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let s of printStudents; let i = index">
+          <td class="text-center">{{ i + 1 }}</td>
+          <td class="text-center">{{ s.admissionNo }}</td>
+          <td class="text-start">{{ s.firstName }} {{ s.lastName }}</td>
+          <td class="text-start">{{ s.fatherName }}</td>
+          <td class="text-center">{{ s.class.className || s.class }}</td>
+          <td class="text-center">{{ s.section }}</td>
+          <td class="text-center">{{ s.cnic }}</td>
+          <td class="text-center">{{ s.dateOfBirth | date:'yyyy-MM-dd' }}</td>
+          <td class="text-center">{{ s.phone }}</td>
+          <td class="text-center"><span class="status-badge">{{ s.student_status }}</span></td>
+        </tr>
+        <tr *ngIf="printStudents.length === 0">
+          <td colspan="10" class="text-center">No student records found.</td>
+        </tr>
+      </tbody>
+    </table>
+    <!-- <div class="report-footer">
+      <span>Generated on {{ currentDate | date:'fullDate' }}</span>
+      <span class="page-count"></span>
+    </div> -->
   </div>
 </div>

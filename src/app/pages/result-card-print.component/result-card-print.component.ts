@@ -58,11 +58,7 @@ export class ResultCardPrintComponent implements OnInit, OnDestroy {
           this.loading = false;
           clearTimeout(this.timeoutId);
           this.cdr.detectChanges();
-          if (this.results.length > 0) {
-            setTimeout(() => window.print(), 500);
-          } else {
-            this.error = 'No result cards found.';
-          }
+          // No auto‑print – user will click the button
         } else {
           this.error = 'Invalid response from server';
           this.loading = false;
@@ -79,18 +75,90 @@ export class ResultCardPrintComponent implements OnInit, OnDestroy {
     });
   }
 
-  getPhotoUrl(photoPath: string): string {
-    if (!photoPath) return 'assets/default-avatar.png';
-    const baseUrl = environment.apiUrl.replace('/api', '');
-    return `${baseUrl}/${photoPath}`;
+  getTotalMarks(result: any): number {
+    if (!result || !result.marks) return 0;
+    const marks = result.marks;
+    return Object.values(marks).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0);
+  }
+
+  getTotalMaxMarks(exam: any): number {
+    return exam?.subjects?.reduce((sum: number, subj: any) => sum + subj.maxMarks, 0) || 0;
+  }
+
+  getPercentage(result: any): number {
+    const obtained = this.getTotalMarks(result);
+    const max = this.getTotalMaxMarks(result?.exam);
+    return max ? (obtained / max) * 100 : 0;
+  }
+
+  getGrade(result: any): string {
+    const percentage = this.getPercentage(result);
+    if (percentage >= 90) return 'A+';
+    if (percentage >= 80) return 'A';
+    if (percentage >= 70) return 'B';
+    if (percentage >= 60) return 'C';
+    if (percentage >= 50) return 'D';
+    return 'F';
   }
 
   printPage() {
-    window.print();
+    const printContents = document.getElementById('print-cards')?.innerHTML;
+    if (!printContents) return;
+
+    // Get all styles from the current document
+    const styles = Array.from(document.querySelectorAll('style')).map(style => style.outerHTML).join('');
+    const externalStyles = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+      .map(link => link.outerHTML)
+      .join('');
+
+    const popup = window.open('', '_blank', 'width=800,height=600');
+    if (!popup) return;
+
+    popup.document.write(`
+      <html>
+        <head>
+          <title>Print Results</title>
+          ${externalStyles}
+          ${styles}
+          <style>
+            /* Ensure page breaks and colors work */
+            @media print {
+              body { margin: 0; padding: 0; background: white; }
+              .no-print { display: none !important; }
+              .result-card-container:not(:first-child) { page-break-before: always; }
+              .result-card {
+                page-break-inside: avoid;
+                margin: 0.5in auto 0.25in;
+                border: 1px solid #ccc;
+                padding: 15px;
+                border-radius: 8px;
+                background: white;
+              }
+              .school-header { background-color: #0d6efd !important; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              .student-info { background-color: #f8f9fa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              thead tr { background-color: #0d6efd !important; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              .table-info { background-color: #e7f1ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              .result-card .row.mt-6 { margin-top: 2rem !important; }
+            }
+          </style>
+        </head>
+        <body>
+          <div id="print-cards">${printContents}</div>
+        </body>
+      </html>
+    `);
+
+    popup.document.close();
+
+    // Wait for resources to load before printing
+    popup.onload = () => {
+      popup.focus();
+      popup.print();
+    };
   }
 
   goBack() {
-    this.router.navigate(['/']);
+    this.router.navigate(['/result']);
   }
 
   retry() {

@@ -33,13 +33,6 @@ export class AuthService {
       );
   }
 
-  forgot(email: string) {
-  return this.http.post(`${this.apiUrl}/auth/forgot`, { email });
-}
-
-  reset(data: any) {
-    return this.http.post(`${this.apiUrl}/auth/reset`, data);
-  }
 
   // Add token for protected routes
   private authHeaders() {

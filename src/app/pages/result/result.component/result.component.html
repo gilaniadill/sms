@@ -17,7 +17,7 @@
         <option *ngFor="let s of sections" [value]="s">{{ s }}</option>
       </select>
     </div>
-    <!-- Group dropdown – only appears if groups exist for the selected class -->
+    <!-- Group dropdown -->
     <div class="col-md-3" *ngIf="groups.length">
       <label for="group" class="form-label">Group</label>
       <select id="group" class="form-select" [(ngModel)]="selectedGroup" (change)="onGroupChange()">
@@ -25,8 +25,7 @@
         <option *ngFor="let g of groups" [value]="g">{{ g }}</option>
       </select>
     </div>
-    <!-- Exam dropdown -->
-    <div class="col-md-3" [class]="groups.length ? 'col-md-3' : 'col-md-3'">
+    <div class="col-md-3">
       <label for="exam" class="form-label">Exam</label>
       <select id="exam" class="form-select" [(ngModel)]="selectedExamId">
         <option value="">Select Exam</option>
@@ -64,8 +63,30 @@
     </button>
   </div>
 
-  <!-- Data Table -->
-  <div class="table-responsive" *ngIf="gridRows.length">
+  <!-- Skeleton Loader -->
+  <div *ngIf="loading" class="table-responsive">
+    <table class="table table-bordered align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th style="width: 40px;"><div class="skeleton-box" style="width: 18px; height: 18px;"></div></th>
+          <th><div class="skeleton-box" style="width: 100px;"></div></th>
+          <th><div class="skeleton-box" style="width: 150px;"></div></th>
+          <th *ngFor="let subj of [1,2,3]"><div class="skeleton-box" style="width: 80px;"></div></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of [1,2,3,4,5]">
+          <td><div class="skeleton-box" style="width: 18px; height: 18px;"></div></td>
+          <td><div class="skeleton-box" style="width: 100px;"></div></td>
+          <td><div class="skeleton-box" style="width: 150px;"></div></td>
+          <td *ngFor="let subj of [1,2,3]"><div class="skeleton-box" style="width: 80px; height: 30px;"></div></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Data Table with Pagination -->
+  <div class="table-responsive" *ngIf="!loading && gridRows.length">
     <table class="table table-bordered table-striped align-middle">
       <thead class="table-dark">
         <tr>
@@ -74,11 +95,11 @@
           </th>
           <th>Admission No</th>
           <th>Student Name</th>
-          <th *ngFor="let subj of subjects">{{ subj.name }}</th>   <!-- ✅ use subj.name -->
+          <th *ngFor="let subj of subjects">{{ subj.name }}</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let row of gridRows; trackBy: trackByStudentId">
+        <tr *ngFor="let row of visibleRows; trackBy: trackByStudentId">
           <td>
             <input type="checkbox" [(ngModel)]="row.selected" (change)="onRowSelect()">
           </td>
@@ -86,15 +107,23 @@
           <td>{{ row.name }}</td>
           <td *ngFor="let subj of subjects">
             <input type="number" class="form-control form-control-sm" style="width: 80px;"
-                   [(ngModel)]="row.marks[subj.name]"  
-                   min="0" [max]="subj.maxMarks">      <!-- ✅ bind max to subj.maxMarks -->
+                   [(ngModel)]="row.marks[subj.name]"
+                   min="0" [max]="subj.maxMarks">
           </td>
         </tr>
       </tbody>
     </table>
+
+    <!-- Show More Button -->
+    <div class="d-flex justify-content-center my-3" *ngIf="visibleRows.length < gridRows.length">
+      <button class="btn btn-outline-primary" (click)="loadMore()" [disabled]="loading">
+        <i class="bi bi-arrow-down-circle me-1"></i> Show More
+      </button>
+    </div>
   </div>
 
-  <div *ngIf="!gridRows.length && !loading" class="alert alert-info">
+  <!-- No Data Placeholder -->
+  <div *ngIf="!loading && !gridRows.length" class="alert alert-info">
     <i class="bi bi-info-circle me-2"></i> No students found. Please select filters and click Load.
   </div>
 </div>
@@ -102,7 +131,6 @@
 <!-- Hidden print area for list view -->
 <div id="print-list-area" style="display:none">
   <style>
-    /* print styles – same as before, but with adjustments for subject names */
     @media print {
       * { box-sizing: border-box; }
       body { margin: 0; padding: 0.3in; background: white; font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #1e293b; }
@@ -123,7 +151,7 @@
   <div class="print-wrapper">
     <div class="report-header">
       <div class="school-info">
-        <strong>Your School Name</strong>
+        <strong>Govt Pilot High School No.1 Muzaffarabad</strong>
         <span>Exam Result List</span>
       </div>
       <div class="date-info">Date: {{ currentDate | date:'dd/MM/yyyy' }}</div>
@@ -136,7 +164,7 @@
           <th>#</th>
           <th>Adm. No.</th>
           <th>Student Name</th>
-          <th *ngFor="let subj of subjects">{{ subj.name }}</th>   <!-- ✅ use subj.name -->
+          <th *ngFor="let subj of subjects">{{ subj.name }}</th>
           <th>Total</th>
           <th>%age</th>
           <th>Grade</th>
@@ -147,7 +175,7 @@
           <td>{{ i + 1 }}</td>
           <td>{{ row.admissionNo }}</td>
           <td>{{ row.name }}</td>
-          <td *ngFor="let subj of subjects">{{ row.marks[subj.name] || 0 }}</td> <!-- ✅ use subj.name -->
+          <td *ngFor="let subj of subjects">{{ row.marks[subj.name] || 0 }}</td>
           <td>{{ row.total }}</td>
           <td>{{ row.percentage.toFixed(1) }}</td>
           <td>{{ row.grade }}</td>

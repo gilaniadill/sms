@@ -22,6 +22,9 @@ export class StudentUpdate implements OnInit {
   currentPhoto: string | null = null;
   selectedFile: File | null = null;
 
+  isImageLoading = true;
+  imageError = false;
+
   constructor(
     private fb: FormBuilder,
     private studentService: StudentService,
@@ -29,12 +32,12 @@ export class StudentUpdate implements OnInit {
     private route: ActivatedRoute,
     private classService: ClassService,
     private toast: ToastService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.studentId = this.route.snapshot.paramMap.get('id')!;
     this.initForm();
-    this.loadClasses(); // classes must load first to map student class/sections
+    this.loadClasses();
   }
 
   private initForm() {
@@ -49,7 +52,7 @@ export class StudentUpdate implements OnInit {
       phone: [''],
       student_status: ['Regular'],
       address: [''],
-      class: ['', Validators.required],   // stores _id
+      class: ['', Validators.required],
       section: ['', Validators.required],
       academicYear: ['', Validators.required],
       cnic: ['', Validators.required],
@@ -57,12 +60,21 @@ export class StudentUpdate implements OnInit {
     });
   }
 
-  // ---------- LOAD CLASSES ----------
   private loadClasses() {
     this.classService.getClasses().subscribe({
       next: (res: any) => {
-        this.classes = res.data || res;
-        this.loadStudent(); // now fetch student
+        let classes = res.data || res;
+        // Sort classes numerically
+        classes.sort((a: any, b: any) => {
+          const aNum = parseInt(a.className, 10);
+          const bNum = parseInt(b.className, 10);
+          if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+          if (!isNaN(aNum)) return -1;
+          if (!isNaN(bNum)) return 1;
+          return a.className.localeCompare(b.className);
+        });
+        this.classes = classes;
+        this.loadStudent();
       },
       error: err => {
         console.error('Error loading classes:', err);
@@ -71,7 +83,13 @@ export class StudentUpdate implements OnInit {
     });
   }
 
-  // ---------- LOAD STUDENT ----------
+  // ✅ Updated photo URL method (same as in list)
+  getPhotoUrl(photo: string): string {
+    if (!photo) return 'assets/avatar.png';
+    const filename = photo.split('/').pop() || photo;
+    return `${environment.apiUrl}/uploads/students/${filename}`;
+  }
+
   private loadStudent() {
     this.studentService.getStudentById(this.studentId).subscribe({
       next: res => {
@@ -79,12 +97,11 @@ export class StudentUpdate implements OnInit {
           const s = res.data;
           const dob = s.dateOfBirth ? new Date(s.dateOfBirth).toISOString().split('T')[0] : '';
 
-          // Photo preview
-          this.currentPhoto = s.photo
-            ? `${environment.apiUrl}/uploads/${s.photo.replace(/^uploads[\\/]/i, '').replace(/\\/g, '/')}`
-            : null;
+          // Use the new getPhotoUrl method
+          this.currentPhoto = s.photo ? this.getPhotoUrl(s.photo) : null;
+          this.isImageLoading = true;
+          this.imageError = false;
 
-          // Patch form (class stores _id)
           this.studentForm.patchValue({
             admissionNo: s.admissionNo,
             firstName: s.firstName,
@@ -102,7 +119,6 @@ export class StudentUpdate implements OnInit {
             cnic: s.cnic
           });
 
-          // Populate sections for selected class
           this.updateSections(s.class._id);
         } else {
           this.toast.show('Student not found!', 'danger');
@@ -117,12 +133,11 @@ export class StudentUpdate implements OnInit {
     });
   }
 
-  // ---------- CLASS CHANGE ----------
   onClassChange(event: Event) {
     const selectEl = event.target as HTMLSelectElement;
     const classId = selectEl.value;
     this.updateSections(classId);
-    this.studentForm.patchValue({ section: '' }); // reset section when class changes
+    this.studentForm.patchValue({ section: '' });
   }
 
   private updateSections(classId: string) {
@@ -130,21 +145,24 @@ export class StudentUpdate implements OnInit {
     this.sections = cls ? cls.sections : [];
   }
 
-  // ---------- PHOTO CHANGE ----------
   onFileChange(event: Event) {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (file) {
-      this.selectedFile = file;
-      this.studentForm.patchValue({ photo: file });
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
 
-      const reader = new FileReader();
-      reader.onload = (e: any) => (this.currentPhoto = e.target.result);
-      reader.readAsDataURL(file);
-    }
+  if (file) {
+    this.selectedFile = file;
+    this.studentForm.patchValue({ photo: file });
+
+    const reader = new FileReader();
+    reader.onload = (e: any) => {
+      this.currentPhoto = e.target.result;
+      this.isImageLoading = false;
+    };
+
+    reader.readAsDataURL(file);
   }
+}
 
-  // ---------- SUBMIT ----------
   submit() {
     if (this.studentForm.invalid) return;
 
@@ -169,13 +187,5 @@ export class StudentUpdate implements OnInit {
         this.toast.show('Failed to update student!', 'danger');
       }
     });
-  }
-
-  // ---------- PHOTO URL ----------
-  getPhotoUrl(photo: string) {
-     if (!photo) return 'assets/avatar.png';
-    return photo
-      ? `${environment.apiUrl}/uploads/${photo.replace(/^uploads[\\/]/i, '').replace(/\\/g, '/')}`
-      : '';
   }
 }

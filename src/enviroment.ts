@@ -4,6 +4,6 @@
 // };
 
 export const environment = {
-  production: false,
+  production: true,
   apiUrl: 'https://sms-backend-hwq8.onrender.com/api'
 };

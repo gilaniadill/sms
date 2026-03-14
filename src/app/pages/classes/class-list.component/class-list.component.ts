@@ -78,7 +78,25 @@ export class ClassListComponent implements OnInit, OnDestroy {
     const sub = this.classService.getClasses().subscribe({
       next: (res: any) => {
         this.isSubmitting = false;
-        this.allClasses = res.data || res;
+        const classes = res.data || res;
+        
+        // Sort classes numerically: "1", "2", "10" in correct order
+        classes.sort((a: any, b: any) => {
+          const aNum = parseInt(a.className, 10);
+          const bNum = parseInt(b.className, 10);
+          
+          // If both are numeric, sort numerically
+          if (!isNaN(aNum) && !isNaN(bNum)) {
+            return aNum - bNum;
+          }
+          // If only one is numeric, place numeric first
+          if (!isNaN(aNum)) return -1;
+          if (!isNaN(bNum)) return 1;
+          // Otherwise, lexicographic sort
+          return a.className.localeCompare(b.className);
+        });
+        
+        this.allClasses = classes;
         this.applyFilters();
         this.toast.show('Classes loaded', 'success');
       },
@@ -192,41 +210,41 @@ export class ClassListComponent implements OnInit, OnDestroy {
     this.initGroupForm();
   }
 
-saveGroup() {
-  if (this.groupForm.invalid || !this.selectedClassId) return;
+  saveGroup() {
+    if (this.groupForm.invalid || !this.selectedClassId) return;
 
-  const formValue = this.groupForm.value;
+    const formValue = this.groupForm.value;
 
-  const subjects = formValue.subjects
-    .filter((s: any) => s.name && s.name.trim() !== '')
-    .map((s: any) => ({
-      name: s.name.trim(),
-      maxMarks: Number(s.maxMarks) || 100
-    }));
+    const subjects = formValue.subjects
+      .filter((s: any) => s.name && s.name.trim() !== '')
+      .map((s: any) => ({
+        name: s.name.trim(),
+        maxMarks: Number(s.maxMarks) || 100
+      }));
 
-  const groupData = {
-    name: formValue.name.trim(),
-    subjects
-  };
+    const groupData = {
+      name: formValue.name.trim(),
+      subjects
+    };
 
-  console.log("Sending group data:", JSON.stringify(groupData, null, 2));
+    console.log("Sending group data:", JSON.stringify(groupData, null, 2));
 
-  const request$ = this.editingGroupId
-    ? this.classService.updateGroup(this.selectedClassId, this.editingGroupId, groupData)
-    : this.classService.addGroup(this.selectedClassId, groupData);
+    const request$ = this.editingGroupId
+      ? this.classService.updateGroup(this.selectedClassId, this.editingGroupId, groupData)
+      : this.classService.addGroup(this.selectedClassId, groupData);
 
-  request$.subscribe({
-    next: () => {
-      this.toast.show('Group saved', 'success');
-      this.closeGroupModal();
-      this.loadClasses();
-    },
-    error: (err) => {
-      console.error(err);
-      this.toast.show(err.error?.message || 'Error saving group', 'danger');
-    }
-  });
-}
+    request$.subscribe({
+      next: () => {
+        this.toast.show('Group saved', 'success');
+        this.closeGroupModal();
+        this.loadClasses();
+      },
+      error: (err) => {
+        console.error(err);
+        this.toast.show(err.error?.message || 'Error saving group', 'danger');
+      }
+    });
+  }
 
   deleteGroup(classId: string, groupId: string, groupName: string) {
     if (!confirm(`Delete group ${groupName}?`)) return;

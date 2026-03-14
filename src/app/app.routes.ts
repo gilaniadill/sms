@@ -17,15 +17,15 @@ import { ExamListComponent } from './pages/exam-list/exam-list.component/exam-li
 // Route Guard (optional but recommended)
 import { AuthGuard } from './core/guards/auth.guard';
 import { LoginComponent } from './pages/login/login.component/login.component';
-// import { ForgotPasswordComponent } from './pages/forgetPassword/forgot-password.component/forgot-password.component';
-// import { ResetPasswordComponent } from './pages/reserPassword/reset-password.component/reset-password.component';
+
 import { AdminComponent } from './pages/admin/admin.component/admin.component';
 
 export const routes: Routes = [
   // Auth Routes
-  { path: 'login', component: LoginComponent },
-  // { path: 'forgot-password', component: ForgotPasswordComponent },
-  // { path: 'reset/:token', component: ResetPasswordComponent },
+
+  //  { path: 'admin', component: AdminComponent},
+   { path: 'login', component: LoginComponent },
+
   
 
   // SMS App Routes (Protected by AuthGuard)
@@ -40,6 +40,8 @@ export const routes: Routes = [
   { path: 'print', component: ResultCardPrintComponent, canActivate: [AuthGuard] },
   { path: 'exams', component: ExamListComponent, canActivate: [AuthGuard] },
   { path: 'admin', component: AdminComponent, canActivate: [AuthGuard] },
+ 
+
 
   
 

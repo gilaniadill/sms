@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, ViewChild, ElementRef, AfterViewInit } from "@angular/core";
+import { Component, OnInit, ChangeDetectorRef, ViewChild, ElementRef } from "@angular/core";
 import { forkJoin } from "rxjs";
 import { AttendanceService } from "../../../services/attendance.service";
 import { ClassService } from "../../../services/class.service";
@@ -65,7 +65,17 @@ export class AttendanceComponent implements OnInit {
       attendance: this.attendanceSvc.getAll(),
     }).subscribe({
       next: (res: any) => {
-        this.classes = res.classes?.data || res.classes || [];
+        // Sort classes numerically
+        let classes = res.classes?.data || res.classes || [];
+        classes.sort((a: any, b: any) => {
+          const aNum = parseInt(a.className, 10);
+          const bNum = parseInt(b.className, 10);
+          if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+          if (!isNaN(aNum)) return -1;
+          if (!isNaN(bNum)) return 1;
+          return a.className.localeCompare(b.className);
+        });
+        this.classes = classes;
         this.records = res.attendance?.data || res.attendance || [];
         this.loading = false;
 

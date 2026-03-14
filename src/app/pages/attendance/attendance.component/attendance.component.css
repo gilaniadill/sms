@@ -3,3 +3,46 @@
   height: 300px;
   width: 100%;
 }
+
+/* Skeleton loader styles */
+.skeleton-box {
+  display: inline-block;
+  height: 1.2em;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  width: 100%;
+  height: 100%;
+}
+
+.skeleton-header {
+  height: 40px;
+  width: 300px;
+  margin-bottom: 20px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-chart {
+  height: 300px;
+  width: 100%;
+  background: #e0e0e0;
+  border-radius: 8px;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-row {
+  height: 50px;
+  width: 100%;
+  margin-bottom: 10px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

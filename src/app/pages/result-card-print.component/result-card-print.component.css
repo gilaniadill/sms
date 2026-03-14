@@ -1,21 +1,157 @@
+/* Print styles – fixed for page breaks and colors */
 @media print {
-  .no-print {
-    display: none;
+  body {
+    margin: 0;
+    padding: 0;
+    background: white;
   }
-  .page-break {
-    page-break-after: always;
+  .no-print, .no-print * {
+    display: none !important;
+  }
+  /* Ensure each card starts on a new page (except the first) */
+  .result-card-container:not(:first-child) {
+    page-break-before: always;
   }
   .result-card {
     page-break-inside: avoid;
+    margin: 0.5in auto 0.25in;
+    border: 1px solid #ccc;
     padding: 15px;
+    border-radius: 8px;
+    background: white;
+  }
+  /* Preserve background colors */
+  .school-header {
+    background-color: #0d6efd !important;
+    color: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .student-info {
+    background-color: #f8f9fa !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  thead tr {
+    background-color: #0d6efd !important;
+    color: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .table-info {
+    background-color: #e7f1ff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  /* Extra space above signatures */
+  .result-card .row.mt-6 {
+    margin-top: 2rem !important;
   }
 }
+
+/* Screen styles */
 .result-card-container {
-  margin-bottom: 20px;
+  margin-bottom: 30px;
 }
 .result-card {
-  border: 1px solid #ccc;
+  border: 1px solid #ddd;
   padding: 20px;
-  border-radius: 8px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
   background: white;
+}
+.school-header {
+  margin-top: -20px;
+  margin-left: -20px;
+  margin-right: -20px;
+  border-radius: 10px 10px 0 0;
+}
+.student-info {
+  border-radius: 8px;
+}
+
+/* Skeleton loader */
+.skeleton-loader {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+.skeleton-card {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  border: 1px solid #ddd;
+}
+.skeleton-header {
+  height: 80px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px 8px 0 0;
+  margin-bottom: 20px;
+}
+.skeleton-student-info {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+.skeleton-avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+.skeleton-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.skeleton-line {
+  height: 20px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+.skeleton-table {
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.skeleton-row {
+  display: flex;
+  border-bottom: 1px solid #dee2e6;
+  padding: 10px;
+}
+.skeleton-row:last-child {
+  border-bottom: none;
+}
+.skeleton-cell {
+  height: 20px;
+  margin-right: 10px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  flex: 1;
+}
+.skeleton-signatures {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 20px;
+}
+.skeleton-signatures .skeleton-line {
+  flex: 1;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }

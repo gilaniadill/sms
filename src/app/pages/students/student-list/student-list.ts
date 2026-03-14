@@ -1,13 +1,12 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, ActivatedRoute } from '@angular/router';
 import { Subscription, forkJoin } from 'rxjs';
-
-import { ActivatedRoute } from '@angular/router';
+import { finalize } from 'rxjs/operators';
 
 import { StudentService } from '../../../services/student.service';
-import { ClassService } from '../../../services/class.service';        // 👈 added
+import { ClassService } from '../../../services/class.service';
 import { Student } from '../../../models/student.model';
 import { ToastService } from '../../../core/toast/toast.service';
 import { environment } from '../../../../enviroment';
@@ -20,8 +19,7 @@ import { environment } from '../../../../enviroment';
   styleUrls: ['./student-list.css']
 })
 export class StudentListComponent implements OnInit, OnDestroy {
-
-  students: Student[] = [];           // filtered list (all matching filters)
+  students: Student[] = [];           // filtered list
   allStudents: Student[] = [];         // master list from API
   visibleStudents: Student[] = [];     // currently displayed slice
   printStudents: Student[] = [];
@@ -30,114 +28,125 @@ export class StudentListComponent implements OnInit, OnDestroy {
   selectedClass = '';
   selectedSection = '';
 
-  classes: any[] = [];                 // list of class objects from backend
-  sections: string[] = [];              // unique sections from all classes
+  classes: any[] = [];                 // list of class objects
+  sections: string[] = [];              // unique sections
 
-  isLoading = false;
+  isLoading = false;                    // loading state for the whole component
   selectAllChecked = false;
   selectedStudentIds: string[] = [];
 
   // Pagination
-  pageSize = 10;
+  pageSize = 50;
   currentPage = 0;
 
   private subs = new Subscription();
 
   constructor(
     private studentService: StudentService,
-    private classService: ClassService,      // 👈 inject
+    private classService: ClassService,
     private toast: ToastService,
-      private route: ActivatedRoute
-  ) {}
+    private route: ActivatedRoute,
+    private cdr: ChangeDetectorRef
+  ) { }
 
   ngOnInit(): void {
-    this.loadClasses();// load classes first to populate dropdowns
-    
-    this.route.queryParams.subscribe(params => {
-      if (params['classId']) {
-        this.selectedClass = params['classId'];
-      }
-    });
-    this.loadStudents();   // then load students
+    this.loadInitialData();
   }
 
   ngOnDestroy(): void {
     this.subs.unsubscribe();
   }
 
-  // ---------- LOAD CLASSES ----------
-  loadClasses() {
-    const sub = this.classService.getClasses().subscribe({
-      next: (res: any) => {
-        this.classes = res.data || res;   // each class: { _id, className, sections }
-        // Build unique sections list from all classes
+  loadInitialData() {
+    this.isLoading = true;
+    this.cdr.detectChanges();
+
+    const classes$ = this.classService.getClasses();
+    const students$ = this.studentService.getStudents();
+
+    const sub = forkJoin({
+      classes: classes$,
+      students: students$
+    }).pipe(
+      finalize(() => {
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      })
+    ).subscribe({
+      next: (results) => {
+        // Handle classes
+        const classRes = results.classes as any;
+        let classes = classRes.data || classRes || [];
+        
+        // ✅ Sort classes numerically
+        classes.sort((a: any, b: any) => {
+          const aNum = parseInt(a.className, 10);
+          const bNum = parseInt(b.className, 10);
+          if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+          if (!isNaN(aNum)) return -1;
+          if (!isNaN(bNum)) return 1;
+          return a.className.localeCompare(b.className);
+        });
+        this.classes = classes;
+
         const allSections = this.classes.flatMap(c => c.sections || []);
-        this.sections = [...new Set(allSections)];   // remove duplicates
+        this.sections = [...new Set(allSections)];
+
+        // Handle students
+        const studentRes = results.students as any;
+        if (studentRes.success) {
+          this.allStudents = studentRes.data.map((s: any) => {
+            const cls = this.classes.find(c => c._id === s.class) || s.class;
+            return { ...s, class: cls };
+          });
+        } else {
+          this.allStudents = [];
+        }
+
+        // Apply route param filter
+        this.route.queryParams.subscribe(params => {
+          if (params['classId']) {
+            this.selectedClass = params['classId'];
+          }
+          this.applyFilters();
+        });
       },
       error: (err) => {
-        console.error('Failed to load classes', err);
-        this.toast.show('Could not load classes', 'danger');
+        console.error('Error loading data', err);
+        this.toast.show('Failed to load data', 'danger');
       }
     });
     this.subs.add(sub);
   }
 
-  // ---------- LOAD STUDENTS ----------
-loadStudents() {
-  this.isLoading = true;
-  const sub = this.studentService.getStudents().subscribe({
-    next: (res: any) => {
-      this.isLoading = false;
-      if (res.success) {
-        // Normalize class property
-        this.allStudents = res.data.map((s: any) => {
-          const cls = this.classes.find(c => c._id === s.class) || s.class;
-          return { ...s, class: cls };
-        });
-
-        this.applyFilters();
-        this.toast.show('Students loaded', 'success');
-      }
-    },
-    error: () => {
-      this.isLoading = false;
-      this.toast.show('Failed to load students', 'danger');
-    }
-  });
-  this.subs.add(sub);
-}
-
-  // ---------- FILTERS ----------
   applyFilters() {
-  let data = [...this.allStudents];
+    let data = [...this.allStudents];
 
-  // search filter
-  if (this.searchText) {
-    const t = this.searchText.toLowerCase();
-    data = data.filter(s =>
-      s.firstName.toLowerCase().includes(t) ||
-      s.lastName.toLowerCase().includes(t) ||
-      s.fatherName.toLowerCase().includes(t) ||
-      s.admissionNo.toLowerCase().includes(t)
-    );
+    if (this.searchText) {
+      const t = this.searchText.toLowerCase();
+      data = data.filter(s =>
+        s.firstName.toLowerCase().includes(t) ||
+        s.lastName.toLowerCase().includes(t) ||
+        s.fatherName.toLowerCase().includes(t) ||
+        s.admissionNo.toLowerCase().includes(t)
+      );
+    }
+
+    if (this.selectedClass) {
+      data = data.filter(s => s.class?._id === this.selectedClass);
+    }
+
+    if (this.selectedSection) {
+      data = data.filter(s => s.section === this.selectedSection);
+    }
+
+    this.students = data;
+    this.resetPagination();
+    this.updateVisibleStudents();
+    this.selectedStudentIds = [];
+    this.selectAllChecked = false;
+    this.cdr.detectChanges();
   }
-
-  // class filter
-  if (this.selectedClass) {
-    data = data.filter(s => s.class?._id === this.selectedClass);
-  }
-
-  // section filter
-  if (this.selectedSection) {
-    data = data.filter(s => s.section === this.selectedSection);
-  }
-
-  this.students = data;
-  this.resetPagination();
-  this.updateVisibleStudents();
-  this.selectedStudentIds = [];
-  this.selectAllChecked = false;
-}
 
   resetFilters() {
     this.searchText = '';
@@ -147,7 +156,6 @@ loadStudents() {
     this.toast.show('Filters reset', 'success');
   }
 
-  // ---------- PAGINATION ----------
   resetPagination() {
     this.currentPage = 0;
   }
@@ -156,6 +164,7 @@ loadStudents() {
     const start = 0;
     const end = (this.currentPage + 1) * this.pageSize;
     this.visibleStudents = this.students.slice(start, end);
+    this.cdr.detectChanges();
   }
 
   loadMore() {
@@ -163,56 +172,59 @@ loadStudents() {
     this.updateVisibleStudents();
   }
 
-  // ---------- SELECTION ----------
   toggleSelection(id: string, checked: boolean) {
-    checked
-      ? this.selectedStudentIds.push(id)
-      : this.selectedStudentIds = this.selectedStudentIds.filter(x => x !== id);
+    if (checked) {
+      this.selectedStudentIds.push(id);
+    } else {
+      this.selectedStudentIds = this.selectedStudentIds.filter(x => x !== id);
+    }
+    this.cdr.detectChanges();
   }
 
   toggleSelectAll(checked: boolean) {
     this.selectAllChecked = checked;
     this.selectedStudentIds = checked ? this.visibleStudents.map(s => s._id) : [];
+    this.cdr.detectChanges();
   }
 
-  // ---------- PHOTO URL ----------
-  getPhotoUrl(photo: string) {
-     if (!photo) return 'assets/avatar.png';
-    return photo
-      ? `${environment.apiUrl}/uploads/${photo.replace(/^uploads[\\/]/i, '').replace(/\\/g, '/')}`
-      : '';
-  }
 
-  // ---------- DELETE ----------
   deleteStudent(id: string, name: string) {
     if (!confirm(`Delete ${name}?`)) return;
-
-    this.studentService.deleteStudent(id).subscribe(() => {
-      this.allStudents = this.allStudents.filter(s => s._id !== id);
-      this.applyFilters(); // re‑filter and update visible list
-      this.toast.show('Student deleted', 'success');
+    this.studentService.deleteStudent(id).subscribe({
+      next: () => {
+        this.allStudents = this.allStudents.filter(s => s._id !== id);
+        this.applyFilters();
+        this.toast.show('Student deleted', 'success');
+      },
+      error: (err) => {
+        console.error(err);
+        this.toast.show('Delete failed', 'danger');
+      }
     });
   }
 
   deleteSelectedStudents() {
     if (!confirm('Delete selected students?')) return;
-
     const calls = this.selectedStudentIds.map(id =>
       this.studentService.deleteStudent(id)
     );
-
-    forkJoin(calls).subscribe(() => {
-      this.allStudents = this.allStudents.filter(
-        s => !this.selectedStudentIds.includes(s._id)
-      );
-      this.applyFilters(); // re‑filter and update visible list
-      this.selectedStudentIds = [];
-      this.selectAllChecked = false;
-      this.toast.show('Selected students deleted', 'success');
+    forkJoin(calls).subscribe({
+      next: () => {
+        this.allStudents = this.allStudents.filter(
+          s => !this.selectedStudentIds.includes(s._id)
+        );
+        this.applyFilters();
+        this.selectedStudentIds = [];
+        this.selectAllChecked = false;
+        this.toast.show('Selected students deleted', 'success');
+      },
+      error: (err) => {
+        console.error(err);
+        this.toast.show('Error deleting selected students', 'danger');
+      }
     });
   }
 
-  // ---------- PRINT ----------
   printSingleStudent(student: Student) {
     this.printStudents = [student];
     this.triggerPrint();
@@ -222,12 +234,10 @@ loadStudents() {
     this.printStudents = this.students.filter(s =>
       this.selectedStudentIds.includes(s._id)
     );
-
     if (!this.printStudents.length) {
       this.toast.show('No students selected', 'danger');
       return;
     }
-
     this.triggerPrint();
   }
 
@@ -235,7 +245,6 @@ loadStudents() {
     setTimeout(() => {
       const printArea = document.getElementById('print-area')!.innerHTML;
       const original = document.body.innerHTML;
-
       document.body.innerHTML = printArea;
       window.print();
       document.body.innerHTML = original;

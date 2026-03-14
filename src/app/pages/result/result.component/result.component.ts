@@ -13,6 +13,7 @@ import { Class } from '../../../models/class.model';
 import { Student } from '../../../models/student.model';
 import { Exam, ExamSubject } from '../../../models/exam.model';
 import { Result } from '../../../models/result.model';
+import { ToastService } from '../../../core/toast/toast.service';
 
 function isStudentObject(student: string | Student): student is Student {
   return typeof student !== 'string';
@@ -46,26 +47,30 @@ interface PrintRow {
 export class ResultEntryComponent implements OnInit {
   classes: Class[] = [];
   sections: string[] = [];
-  groups: string[] = [];                 // groups for the selected class
+  groups: string[] = [];
   exams: Exam[] = [];
 
   selectedClassId = '';
   selectedSection = '';
-  selectedGroup = '';                    // selected group
+  selectedGroup = '';
   selectedExamId = '';
 
   students: Student[] = [];
   results: Result[] = [];
-  subjects: ExamSubject[] = [];           // ✅ changed from string[] to ExamSubject[]
+  subjects: ExamSubject[] = [];
 
   gridRows: GridRow[] = [];
+  visibleRows: GridRow[] = [];      // ✅ for pagination
   displayedColumns: string[] = [];
 
   loading = false;
   saving = false;
   selectedStudentIds = new Set<string>();
 
-  // For print list
+  // Pagination
+  pageSize = 10;
+  currentPage = 0;
+
   selectedExamName = '';
   selectedAcademicYear = '';
   selectedClassName = '';
@@ -73,7 +78,7 @@ export class ResultEntryComponent implements OnInit {
   printListData: PrintRow[] = [];
 
   get allSelected(): boolean {
-    return this.gridRows.length > 0 && this.gridRows.every(row => row.selected);
+    return this.visibleRows.length > 0 && this.visibleRows.every(row => row.selected);
   }
 
   constructor(
@@ -82,7 +87,8 @@ export class ResultEntryComponent implements OnInit {
     private examService: ExamService,
     private resultService: ResultService,
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private toast: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -92,17 +98,30 @@ export class ResultEntryComponent implements OnInit {
   loadClasses() {
     this.classService.getClasses().subscribe({
       next: (res) => {
-        this.classes = res.data;
+        let classes = res.data;
+        // Sort classes numerically
+        classes.sort((a: any, b: any) => {
+          const aNum = parseInt(a.className, 10);
+          const bNum = parseInt(b.className, 10);
+          if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+          if (!isNaN(aNum)) return -1;
+          if (!isNaN(bNum)) return 1;
+          return a.className.localeCompare(b.className);
+        });
+        this.classes = classes;
         this.cdr.detectChanges();
       },
-      error: (err) => console.error('Error loading classes:', err)
+      error: (err) => {
+        console.error('Error loading classes:', err);
+        this.toast.show('Failed to load classes', 'danger');
+      }
     });
   }
 
   onClassChange() {
     const cls = this.classes.find((c) => c._id === this.selectedClassId);
     this.sections = cls?.sections || [];
-    this.groups = cls?.groups?.map(g => g.name) || [];  // extract group names
+    this.groups = cls?.groups?.map(g => g.name) || [];
     this.selectedSection = '';
     this.selectedGroup = '';
     this.selectedExamId = '';
@@ -127,13 +146,16 @@ export class ResultEntryComponent implements OnInit {
         this.exams = res.data;
         this.cdr.detectChanges();
       },
-      error: (err) => console.error(err)
+      error: (err) => {
+        console.error(err);
+        this.toast.show('Failed to load exams', 'danger');
+      }
     });
   }
 
   loadData() {
     if (!this.selectedClassId || !this.selectedSection || !this.selectedExamId) {
-      alert('Please select class, section and exam');
+      this.toast.show('Please select class, section and exam', 'warning');
       return;
     }
 
@@ -145,6 +167,7 @@ export class ResultEntryComponent implements OnInit {
         timeout(10000),
         catchError(err => {
           console.error('Students API error:', err);
+          this.toast.show('Failed to load students', 'danger');
           return of({ success: false, data: [] });
         })
       ),
@@ -152,6 +175,7 @@ export class ResultEntryComponent implements OnInit {
         timeout(10000),
         catchError(err => {
           console.error('Results API error:', err);
+          this.toast.show('Failed to load results', 'danger');
           return of({ success: false, data: [] });
         })
       )
@@ -162,8 +186,12 @@ export class ResultEntryComponent implements OnInit {
       })
     ).subscribe({
       next: ({ students, results }) => {
-        this.students = students?.data || [];
-        this.results = results?.data || [];
+        // Handle both wrapped and unwrapped responses
+        const studentArray = students?.data || students;
+        const resultArray = results?.data || results;
+
+        this.students = Array.isArray(studentArray) ? studentArray : [];
+        this.results = Array.isArray(resultArray) ? resultArray : [];
 
         const exam = this.exams.find(e => e._id === this.selectedExamId);
         this.subjects = exam?.subjects || [];
@@ -172,10 +200,15 @@ export class ResultEntryComponent implements OnInit {
         const cls = this.classes.find(c => c._id === this.selectedClassId);
         this.selectedClassName = cls?.className || '';
 
-        this.buildGrid();
+        if (this.students.length === 0) {
+          this.toast.show('No students found for this class/section', 'info');
+        } else {
+          this.buildGrid();
+        }
       },
       error: (err) => {
         console.error('Unexpected error:', err);
+        this.toast.show('An unexpected error occurred', 'danger');
       }
     });
   }
@@ -191,7 +224,7 @@ export class ResultEntryComponent implements OnInit {
       const existing = resultMap.get(student._id);
       const marks: { [subject: string]: number } = {};
       this.subjects.forEach(subj => {
-        marks[subj.name] = existing?.marks?.[subj.name] || 0;   // ✅ use subj.name
+        marks[subj.name] = existing?.marks?.[subj.name] || 0;
       });
       return {
         studentId: student._id,
@@ -203,9 +236,24 @@ export class ResultEntryComponent implements OnInit {
       };
     });
 
-    // Displayed columns: subject names
     this.displayedColumns = ['select', 'admissionNo', 'name', ...this.subjects.map(s => s.name)];
+    // Reset pagination
+    this.currentPage = 0;
+    this.updateVisibleRows();
     this.cdr.detectChanges();
+  }
+
+  // ✅ Pagination methods
+  updateVisibleRows() {
+    const start = 0;
+    const end = (this.currentPage + 1) * this.pageSize;
+    this.visibleRows = this.gridRows.slice(start, end);
+    this.cdr.detectChanges();
+  }
+
+  loadMore() {
+    this.currentPage++;
+    this.updateVisibleRows();
   }
 
   trackByStudentId(index: number, row: GridRow): string {
@@ -214,7 +262,7 @@ export class ResultEntryComponent implements OnInit {
 
   toggleAll(event: Event) {
     const checked = (event.target as HTMLInputElement).checked;
-    this.gridRows.forEach(row => (row.selected = checked));
+    this.visibleRows.forEach(row => (row.selected = checked));
     this.updateSelectedSet();
     this.cdr.detectChanges();
   }
@@ -225,7 +273,7 @@ export class ResultEntryComponent implements OnInit {
 
   private updateSelectedSet() {
     this.selectedStudentIds.clear();
-    this.gridRows.forEach(row => {
+    this.visibleRows.forEach(row => {
       if (row.selected) {
         this.selectedStudentIds.add(row.studentId);
       }
@@ -250,17 +298,17 @@ export class ResultEntryComponent implements OnInit {
         this.cdr.detectChanges();
       })
     ).subscribe({
-      next: () => alert('Saved successfully'),
+      next: () => this.toast.show('Saved successfully', 'success'),
       error: (err) => {
         console.error(err);
-        alert('Error saving');
+        this.toast.show('Error saving', 'danger');
       }
     });
   }
 
   deleteSelected() {
     if (this.selectedStudentIds.size === 0) {
-      alert('No rows selected');
+      this.toast.show('No rows selected', 'warning');
       return;
     }
 
@@ -273,7 +321,7 @@ export class ResultEntryComponent implements OnInit {
     });
 
     if (selectedResultIds.length === 0) {
-      alert('No saved results for selected students');
+      this.toast.show('No saved results for selected students', 'warning');
       return;
     }
 
@@ -281,10 +329,13 @@ export class ResultEntryComponent implements OnInit {
 
     this.resultService.deleteResults(selectedResultIds).subscribe({
       next: (res) => {
-        alert(`Deleted ${res.deletedCount} results`);
+        this.toast.show(`Deleted ${res.deletedCount} results`, 'success');
         this.loadData();
       },
-      error: (err) => console.error(err)
+      error: (err) => {
+        console.error(err);
+        this.toast.show('Error deleting', 'danger');
+      }
     });
   }
 
@@ -295,7 +346,7 @@ export class ResultEntryComponent implements OnInit {
 
   printSelected() {
     if (this.selectedStudentIds.size === 0) {
-      alert('No rows selected');
+      this.toast.show('No rows selected', 'warning');
       return;
     }
     this.navigateToPrint(Array.from(this.selectedStudentIds));
@@ -318,7 +369,7 @@ export class ResultEntryComponent implements OnInit {
 
   printListSelected() {
     if (this.selectedStudentIds.size === 0) {
-      alert('No rows selected');
+      this.toast.show('No rows selected', 'warning');
       return;
     }
     const selectedRows = this.gridRows.filter(row => this.selectedStudentIds.has(row.studentId));
@@ -330,7 +381,7 @@ export class ResultEntryComponent implements OnInit {
     this.printListData = rows.map(row => {
       const marksArray = this.subjects.map(subj => row.marks[subj.name] || 0);
       const total = marksArray.reduce((a, b) => a + b, 0);
-      const maxTotal = this.subjects.reduce((sum, subj) => sum + subj.maxMarks, 0);   // ✅ sum of maxMarks
+      const maxTotal = this.subjects.reduce((sum, subj) => sum + subj.maxMarks, 0);
       const percentage = maxTotal ? (total / maxTotal) * 100 : 0;
 
       let grade = '';
@@ -347,7 +398,7 @@ export class ResultEntryComponent implements OnInit {
         marks: row.marks,
         total,
         percentage,
-        grade
+        grade,
       };
     });
   }
@@ -359,7 +410,7 @@ export class ResultEntryComponent implements OnInit {
       document.body.innerHTML = printArea;
       window.print();
       document.body.innerHTML = original;
-      location.reload();
+      location.reload(); // removed to prevent reload after print
     }, 100);
   }
 }

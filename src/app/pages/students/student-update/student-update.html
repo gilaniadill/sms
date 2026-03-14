@@ -134,13 +134,35 @@
             <input type="file" class="form-control" (change)="onFileChange($event)" accept="image/*">
             <small class="text-muted">Leave empty to keep current</small>
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Current Photo</label>
-            <div class="d-flex align-items-center">
-              <img *ngIf="currentPhoto" [src]="currentPhoto" width="70" height="70" class="rounded-circle border object-fit-cover me-2">
-              <span *ngIf="!currentPhoto" class="text-muted">No photo</span>
-            </div>
-          </div>
+        
+
+<div class="col-md-4">
+  <label class="form-label fw-semibold">Current Photo</label>
+
+  <div class="d-flex align-items-center">
+
+    <!-- Student Photo -->
+    <img
+      *ngIf="currentPhoto"
+      [src]="currentPhoto"
+      width="70"
+      height="70"
+      class="rounded-circle border object-fit-cover me-2"
+      (error)="currentPhoto='assets/avatar.png'"
+    />
+
+    <!-- Fallback if no photo -->
+    <img
+      *ngIf="!currentPhoto"
+      src="assets/avatar.png"
+      width="70"
+      height="70"
+      class="rounded-circle border object-fit-cover me-2"
+    />
+
+  </div>
+</div>
+
         </div>
 
         <!-- Form Actions -->

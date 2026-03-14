@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { AuthService, User } from './services/auth.service';
 import { filter } from 'rxjs/operators';
 import { Subscription } from 'rxjs';
+import { IdleService } from './services/idle.service';
 
 @Component({
   selector: 'app-root',
@@ -20,7 +21,11 @@ export class AppComponent implements OnInit, OnDestroy {
   private routerSub: Subscription | undefined;
   private userSub: Subscription | undefined;
 
-  constructor(private router: Router, private auth: AuthService) {}
+  constructor(
+    private router: Router,
+    private auth: AuthService,
+    private idleService: IdleService
+  ) {}
 
   ngOnInit(): void {
     // Subscribe to user changes
@@ -28,12 +33,13 @@ export class AppComponent implements OnInit, OnDestroy {
       this.user = user;
     });
 
-    // Check route to decide sidebar visibility
+    // Subscribe to router events to control sidebar visibility
     this.routerSub = this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
     ).subscribe(() => {
       const currentUrl = this.router.url;
-      const authPages = ['/login', '/forgot-password', '/reset'];
+      // Hide sidebar on auth pages and print page
+      const authPages = ['/login', '/forgot-password', '/reset', '/print'];
       this.showSidebar = !authPages.some(page => currentUrl.startsWith(page));
     });
   }

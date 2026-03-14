@@ -60,47 +60,56 @@ export class ExamListComponent implements OnInit, OnDestroy {
   }
 
   loadInitialData() {
-    this.isInitialLoading = true;
-    this.cdr.detectChanges();
+  this.isInitialLoading = true;
+  this.cdr.detectChanges();
 
-    const classes$ = this.classService.getClasses().pipe(
-      timeout(10000),
-      catchError(err => {
-        console.error('Classes API error:', err);
-        this.toast.show('Failed to load classes', 'danger');
-        return of({ data: [] });
-      })
-    );
+  const classes$ = this.classService.getClasses().pipe(
+    timeout(10000),
+    catchError(err => {
+      console.error('Classes API error:', err);
+      this.toast.show('Failed to load classes', 'danger');
+      return of({ data: [] });
+    })
+  );
 
-    const exams$ = this.examService.getExamsByClass().pipe(
-      timeout(10000),
-      catchError(err => {
-        console.error('Exams API error:', err);
-        this.toast.show('Failed to load exams', 'danger');
-        return of({ data: [] });
-      })
-    );
+  const exams$ = this.examService.getExamsByClass().pipe(
+    timeout(10000),
+    catchError(err => {
+      console.error('Exams API error:', err);
+      this.toast.show('Failed to load exams', 'danger');
+      return of({ data: [] });
+    })
+  );
 
-    const sub = forkJoin({
-      classes: classes$,
-      exams: exams$
-    }).subscribe({
-      next: (results) => {
-        this.classes = results.classes.data || results.classes;
-        this.exams = results.exams.data || results.exams;
-        this.isInitialLoading = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Unexpected forkJoin error:', err);
-        this.toast.show('Failed to load data', 'danger');
-        this.isInitialLoading = false;
-        this.cdr.detectChanges();
-      }
-    });
-
-    this.subs.add(sub);
-  }
+  const sub = forkJoin({
+    classes: classes$,
+    exams: exams$
+  }).subscribe({
+    next: (results) => {
+      let classes = results.classes.data || results.classes;
+      // Sort classes numerically
+      classes.sort((a: any, b: any) => {
+        const aNum = parseInt(a.className, 10);
+        const bNum = parseInt(b.className, 10);
+        if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+        if (!isNaN(aNum)) return -1;
+        if (!isNaN(bNum)) return 1;
+        return a.className.localeCompare(b.className);
+      });
+      this.classes = classes;
+      this.exams = results.exams.data || results.exams;
+      this.isInitialLoading = false;
+      this.cdr.detectChanges();
+    },
+    error: (err) => {
+      console.error('Unexpected forkJoin error:', err);
+      this.toast.show('Failed to load data', 'danger');
+      this.isInitialLoading = false;
+      this.cdr.detectChanges();
+    }
+  });
+  this.subs.add(sub);
+}
 
   loadExams() {
     this.isLoading = true;
